@@ -1,0 +1,74 @@
+{
+  "name": "spotify-classic-lyrics",
+  "productName": "Classic Lyrics",
+  "version": "1.0.0",
+  "description": "Restore Spotify's classic desktop lyrics layout with a native preference.",
+  "author": "Colby Baker",
+  "license": "MIT",
+  "main": "src/main.cjs",
+  "repository": "https://github.com/Colbyco/spotify-classic-lyrics",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.cjs",
+    "dist:win": "electron-builder --win nsis portable --x64 --publish never",
+    "dist:mac": "electron-builder --mac dmg --universal --publish never",
+    "pack": "electron-builder --dir --publish never"
+  },
+  "dependencies": {
+    "classic-level": "3.0.0"
+  },
+  "devDependencies": {
+    "electron": "45.0.0",
+    "electron-builder": "26.15.3",
+    "png2icons": "2.0.1",
+    "sharp": "0.35.5"
+  },
+  "build": {
+    "appId": "com.colbyco.classiclyrics",
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/classic-level/prebuilds/**/*"
+    ],
+    "npmRebuild": false,
+    "files": [
+      "src/**/*",
+      "package.json",
+      "LICENSE"
+    ],
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "win": {
+      "icon": "build/icon.ico",
+      "artifactName": "Classic-Lyrics-${version}-Windows-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowElevation": false,
+      "artifactName": "Classic-Lyrics-Setup-${version}.exe",
+      "deleteAppDataOnUninstall": false
+    },
+    "portable": {
+      "artifactName": "Classic-Lyrics-Portable-${version}.exe"
+    },
+    "mac": {
+      "icon": "build/icon.icns",
+      "category": "public.app-category.utilities",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "minimumSystemVersion": "13.0",
+      "x64ArchFiles": "**/prebuilds/darwin-x64/**",
+      "artifactName": "Classic-Lyrics-${version}-macOS-Universal.${ext}"
+    },
+    "dmg": {
+      "sign": false
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "Colbyco",
+      "repo": "spotify-classic-lyrics"
+    }
+  }
+}

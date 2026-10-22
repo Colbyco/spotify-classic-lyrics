@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Classic Lyrics</title><link rel="stylesheet" href="style.css"></head>
+<body><main>
+  <header><div class="brand"><img src="icon.png" alt="" width="42" height="42"><div>Classic Lyrics<span>FOR SPOTIFY DESKTOP</span></div></div><button id="source" class="text-button">Source ↗</button></header>
+  <div class="eyebrow">YOUR MUSIC. YOUR LAYOUT.</div>
+  <h1>Keep the words.<br><span>Keep the controls.</span></h1>
+  <p class="intro">Bring back lyrics beside your library, with playback controls always in reach.</p>
+  <div class="preview" aria-hidden="true"><div class="mock-nav"><i></i><i></i><i></i><i></i></div><div class="mock-lyrics"><b></b><b></b><b class="active"></b><b></b></div><div class="mock-art"><i></i><b></b><b></b></div><div class="mock-player"><i></i><span>◀ &nbsp; ● &nbsp; ▶</span><b></b></div></div>
+  <section class="status" aria-live="polite"><div class="status-line"><i id="dot"></i><h2 id="title">Checking Spotify…</h2><button id="check" class="text-button">Refresh</button></div><p id="message">Looking for your desktop app.</p></section>
+  <div class="actions"><button id="fix" class="primary">Restore classic lyrics</button><button id="spotify" class="secondary">Open Spotify ↗</button></div>
+  <section class="automatic"><div><h2>Keep it fixed automatically</h2><p>Check for resets after Spotify updates. Repairs wait until Spotify closes, so your music keeps playing.</p><small>Starts at sign-in and stays in the menu bar or system tray.</small></div><label class="switch"><input type="checkbox" id="auto" aria-label="Keep it fixed automatically"><span></span></label></section>
+  <footer><button id="undo" class="text-button" disabled>Undo my fix</button><span>Offline · No Spotify login required</span><button id="quit" class="text-button">Quit</button></footer>
+  <p class="footnote">Independent, open-source utility. Not affiliated with Spotify.</p>
+  <p id="error" class="error" role="alert" hidden></p>
+</main><script src="renderer.cjs"></script></body></html>
