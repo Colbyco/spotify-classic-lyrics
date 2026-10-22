@@ -175,5 +175,5 @@ async function start() {
 app.on('second-instance', showWindow);
 app.on('activate', () => { if (settings) showWindow(); });
 app.on('before-quit', () => { quitting = true; });
-app.on('window-all-closed', () => { if (!settings?.autoRepair) app.quit(); });
+app.on('window-all-closed', () => { if (!process.argv.includes('--self-test') && !settings?.autoRepair) app.quit(); });
 app.whenReady().then(start).catch(error => { dialog.showErrorBox('Classic Lyrics', friendly(error)); app.quit(); });

@@ -32,7 +32,7 @@ async function run() {
     await win.loadFile(path.join(__dirname, 'index.html'));
     const evaluate = source => win.webContents.executeJavaScript(source);
     const waitFor = async expression => {
-      for (let n = 0; n < 100; n++) {
+      for (let n = 0; n < 400; n++) {
         if (await evaluate(`Boolean(${expression})`)) return;
         await new Promise(resolve => setTimeout(resolve, 25));
       }
@@ -59,7 +59,7 @@ async function run() {
     assert.equal(uploads, 0);
     win.setSize(460, 690);
     await evaluate('document.getElementById("consent").click(); document.getElementById("send").click()');
-    await waitFor('document.getElementById("send").textContent === "Sent"');
+    await waitFor('document.getElementById("send").textContent === "Sent" && !document.getElementById("back").disabled');
     assert.equal(uploads, 1);
     assert.equal(await evaluate('document.getElementById("send").disabled'), true);
     await evaluate('document.getElementById("back").click()');

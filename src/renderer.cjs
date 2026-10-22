@@ -20,8 +20,8 @@ function renderReport(value) {
   $('findings').replaceChildren(...value.findings.map(finding => { const li = document.createElement('li'); li.textContent = finding.text; return li; }));
   $('report-data').textContent = JSON.stringify(value.report, null, 2);
   $('consent').checked = false;
-  $('consent').disabled = value.sent;
-  $('issue').disabled = value.sent;
+  $('consent').disabled = pending || value.sent;
+  $('issue').disabled = pending || value.sent;
   $('send').textContent = value.sent ? 'Sent' : 'Send report';
   $('send').disabled = true;
   $('report-status').textContent = value.sent ? `Report sent. Reference: ${value.id}` : '';
