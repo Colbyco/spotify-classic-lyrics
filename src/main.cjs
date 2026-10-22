@@ -1,10 +1,15 @@
 'use strict';
-const { app, BrowserWindow, ipcMain, dialog, Menu, Tray, nativeImage, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Menu, Tray, nativeImage, nativeTheme, shell } = require('electron');
+const fs = require('node:fs/promises');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const storage = require('./storage.cjs');
 const platform = require('./platform.cjs');
 const { watchOnce } = require('./watcher.cjs');
+const diagnostics = require('./diagnostics.cjs');
+const { Reports } = require('./reporting.cjs');
+const reports = new Reports();
+let lastFix = 'not-attempted', lastError = 'none', attempted = false;
 const REPOSITORY = 'https://github.com/Colbyco/spotify-classic-lyrics';
 let window, tray, settings, state = { kind: 'checking', message: 'Looking for Spotify…', autoRepair: false }, checking = false, busy = false, quitting = false;
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
@@ -13,6 +18,7 @@ const indexUrl = pathToFileURL(path.join(__dirname, 'index.html')).href;
 
 function emit(patch) {
   state = { ...state, ...patch, autoRepair: settings?.autoRepair || false, version: app.getVersion() };
+  state.canReport = attempted || state.canUndo || ['fixed', 'error', 'not-found', 'unavailable'].includes(state.kind);
   if (window && !window.isDestroyed()) window.webContents.send('status', state);
   if (tray) tray.setToolTip(`Classic Lyrics — ${state.kind === 'fixed' ? 'classic layout is active' : 'open for status'}`);
   return state;
@@ -29,9 +35,9 @@ async function check() {
     }
     const backup = await storage.readJson(backupFile(), { records: [] });
     const running = await platform.isSpotifyRunning();
-    const fixed = statuses.length > 0 && statuses.every(s => s.fixed);
+    const fixed = statuses.length > 0 && !failures && statuses.every(s => s.fixed);
     return emit({ kind: fixed ? 'fixed' : statuses.length ? 'needs-fix' : candidates.length ? 'unavailable' : 'not-found',
-      message: fixed ? 'Lyrics, your library, and playback controls stay together.' : statuses.length ? (settings.autoRepair && running ? 'A reset was detected. Repair is queued for when Spotify closes.' : 'Restore the classic lyrics layout with one click.') : candidates.length ? 'Quit Spotify and try again. If you just installed it, sign in and play a song first.' : 'Open the Spotify desktop app, sign in, and play a song. Then check again.',
+      message: fixed ? 'The lyrics setting is saved. Open Lyrics in Spotify to check it.' : statuses.length ? (settings.autoRepair && running ? 'The setting reset. It will be fixed when Spotify closes.' : 'Put lyrics back beside your library and playback controls.') : candidates.length ? 'Quit Spotify and check again. If it is a new install, sign in and play a song first.' : 'Open Spotify, sign in, and play a song. Then check again.',
       running, profiles: statuses.reduce((sum, s) => sum + s.profiles, 0), canUndo: backup.records.length > 0, lastChecked: Date.now(), readErrors: failures });
   } catch (error) { return emit({ kind: 'error', message: friendly(error), lastChecked: Date.now() }); }
   finally { checking = false; }
@@ -55,11 +61,14 @@ async function setAuto(enabled) {
 }
 async function repair({ undo = false, background = false } = {}) {
   if (busy || checking) return state;
-  const wasRunning = await platform.isSpotifyRunning();
+  if (!undo && !background) { attempted = true; emit({}); }
+  let wasRunning;
+  try { wasRunning = await platform.isSpotifyRunning(); }
+  catch (error) { if (!undo) { lastFix = 'failed'; lastError = diagnostics.errorCategory(error); } return emit({ kind: 'error', message: friendly(error) }); }
   if (background && wasRunning) return state;
   if (wasRunning) {
-    const { response } = await dialog.showMessageBox(window, { type: 'question', title: undo ? 'Undo the lyrics fix' : 'Restore classic lyrics', message: 'Spotify needs to close briefly.', detail: 'Playback will pause. Spotify will reopen after its lyrics setting is saved.', buttons: [undo ? 'Close Spotify and undo' : 'Close Spotify and repair', 'Cancel'], defaultId: 0, cancelId: 1, noLink: true });
-    if (response !== 0) return state;
+    const { response } = await dialog.showMessageBox(window, { type: 'question', title: undo ? 'Undo the lyrics fix' : 'Fix lyrics layout', message: 'Spotify needs to close briefly.', detail: 'Playback will pause. Spotify will reopen after its lyrics setting is saved.', buttons: [undo ? 'Close Spotify and undo' : 'Close Spotify and fix', 'Cancel'], defaultId: 0, cancelId: 1, noLink: true });
+    if (response !== 0) { if (!undo) { lastFix = 'cancelled'; lastError = 'none'; } return state; }
   }
   busy = true; emit({ kind: 'working', message: undo ? 'Restoring your previous lyrics preference…' : 'Saving the classic lyrics preference…' });
   let error;
@@ -83,9 +92,11 @@ async function repair({ undo = false, background = false } = {}) {
     if (wasRunning) await platform.openSpotify(shell).catch(() => {});
   }
   await check();
+  if (!undo && !error && state.kind !== 'fixed') error = new Error('The saved setting could not be confirmed. Check again or report the problem.');
+  if (!undo) { lastFix = error ? 'failed' : state.kind === 'fixed' ? 'saved' : 'failed'; lastError = error ? diagnostics.errorCategory(error) : lastFix === 'saved' ? 'none' : 'other'; }
   if (error) emit({ kind: 'error', message: friendly(error) });
-  else if (undo) emit({ message: 'Your previous lyrics preference was restored. Automatic repair is off.' });
-  else emit({ message: background ? 'The lyrics preference was repaired automatically while Spotify was closed.' : 'The classic lyrics preference is saved. Open Lyrics in Spotify to see it.' });
+  else if (undo) { lastFix = 'not-attempted'; lastError = 'none'; emit({ message: 'Your previous lyrics preference was restored. Automatic repair is off.' }); }
+  else emit({ message: background ? 'The lyrics setting was reapplied while Spotify was closed.' : 'The lyrics setting is saved. Open Lyrics in Spotify to check it.' });
   return state;
 }
 async function tick() {
@@ -93,7 +104,7 @@ async function tick() {
 }
 function showWindow() {
   if (window && !window.isDestroyed()) { window.show(); window.focus(); return; }
-  window = new BrowserWindow({ width: 760, height: 740, minWidth: 620, minHeight: 680, title: 'Classic Lyrics', backgroundColor: '#111315', autoHideMenuBar: true,
+  window = new BrowserWindow({ width: 440, height: 365, minWidth: 400, minHeight: 340, title: 'Spotify lyrics fix', backgroundColor: nativeTheme.shouldUseDarkColors ? '#202020' : '#fafafa', autoHideMenuBar: true,
     icon: path.join(__dirname, 'icon.png'), webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, devTools: !app.isPackaged } });
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   window.webContents.on('will-navigate', (event, url) => { if (url !== indexUrl) event.preventDefault(); });
@@ -132,6 +143,24 @@ async function start() {
       case 'fix': return repair();
       case 'undo': return repair({ undo: true });
       case 'auto': return setAuto(argument);
+      case 'report': {
+        if (busy || checking) throw new Error('Wait for the current check to finish.');
+        const report = await diagnostics.collect({ appVersion: app.getVersion(), automaticRepair: settings.autoRepair, lastFix, lastError });
+        const reviewed = await reports.prepare(report);
+        window?.setSize(460, 690);
+        return reviewed;
+      }
+      case 'report-issue': return reports.update(argument?.id, argument?.issue);
+      case 'send-report': return reports.submit(argument);
+      case 'save-report': {
+        if (!reports.current || argument?.id !== reports.current.id) throw new Error('Run the checks again.');
+        const { canceled, filePath } = await dialog.showSaveDialog(window, { title: 'Save diagnostic report', defaultPath: 'spotify-lyrics-report.json', filters: [{ name: 'JSON report', extensions: ['json'] }] });
+        if (!canceled && filePath) await fs.writeFile(filePath, JSON.stringify(reports.current.report, null, 2), { mode: 0o600 });
+        return { saved: !canceled && !!filePath };
+      }
+      case 'report-close':
+        if (reports.sending) throw new Error('Wait for the report to finish sending.');
+        reports.current = null; window?.setSize(440, 365); return;
       case 'spotify': await platform.openSpotify(shell); return state;
       case 'source': await shell.openExternal(REPOSITORY); return state;
       case 'quit': app.quit(); return;

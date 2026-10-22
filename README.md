@@ -1,15 +1,15 @@
-# Classic Lyrics for Spotify
+# Spotify lyrics fix
 
 Restore lyrics in the center of Spotify, with your library and playback controls visible.
 
-**[Download for Windows](https://github.com/Colbyco/spotify-classic-lyrics/releases/latest/download/Classic-Lyrics-Setup-1.0.0.exe)** · **[Download for macOS — Intel + Apple silicon](https://github.com/Colbyco/spotify-classic-lyrics/releases/latest/download/Classic-Lyrics-1.0.0-macOS-Universal.dmg)** · [All downloads](https://github.com/Colbyco/spotify-classic-lyrics/releases/latest)
+**[Download for Windows](https://github.com/Colbyco/spotify-classic-lyrics/releases/latest/download/Classic-Lyrics-Setup-1.0.1.exe)** · **[Download for macOS — Intel + Apple silicon](https://github.com/Colbyco/spotify-classic-lyrics/releases/latest/download/Classic-Lyrics-1.0.1-macOS-Universal.dmg)** · [All downloads](https://github.com/Colbyco/spotify-classic-lyrics/releases/latest)
 
 No Git, terminal, Node.js installation, ZIP extraction, or Spotify customization framework is needed.
 
 ## Use it
 
 1. Download the Windows Setup `.exe`, or open the macOS `.dmg` and drag **Classic Lyrics** to Applications.
-2. Open Classic Lyrics and click **Restore classic lyrics**. If Spotify is running, the app asks before closing and reopening it. Playback pauses during this manual repair.
+2. Open Classic Lyrics and click **Fix lyrics layout**. If Spotify is running, the app asks before closing and reopening it. Playback pauses during this manual repair.
 3. Open Lyrics in Spotify. Your library and playback controls should stay visible.
 
 The Windows **Portable** `.exe` is also available for a one-time repair without installation. Automatic startup requires the installed Windows app, or the Mac app in Applications.
@@ -18,12 +18,12 @@ These initial builds do not have a paid publisher certificate or Apple notarizat
 
 ## Keep it fixed after updates
 
-Turn on **Keep it fixed automatically** in the installed app. This is optional and off by default.
+Turn on **Reapply if Spotify resets it** in the installed app. This is optional and off by default.
 
 - The app starts when you sign in and stays in your system tray or menu bar.
 - It checks the actual lyrics preference every 15 seconds, so it can detect resets caused by an update or a feature rollout.
 - If Spotify is open, it queues the repair. **Background monitoring never closes Spotify or interrupts playback.** Quit Spotify completely to let the queued repair run, then reopen it. Closing Spotify's window may only minimize it to the tray; use its Quit/Exit action.
-- If Spotify updates and immediately restarts, repair waits for the next full exit. Use **Restore classic lyrics** for an immediate repair with an explicit restart prompt.
+- If Spotify updates and immediately restarts, repair waits for the next full exit. Use **Fix lyrics layout** for an immediate repair with an explicit restart prompt.
 - Turning the toggle off removes the login item. **Quit** exits the helper; when monitoring is on it starts again at the next sign-in.
 
 This monitors Spotify's preference. It does not block Spotify updates or download updates to this helper automatically.
@@ -36,17 +36,29 @@ Spotify's own desktop code reads a JSON preference named `remote-config-override
 { "enableLyricsVariationsInNPV": "CONTROL" }
 ```
 
-It preserves other feature overrides, saves the previous value of this flag for **Undo my fix**, and updates Chromium's storage-size metadata in the same atomic LevelDB batch. Undo restores this flag while preserving changes made to other preferences since the repair. It also turns off automatic repair.
+It preserves other feature overrides, saves the previous value of this flag for **Undo**, and updates Chromium's storage-size metadata in the same atomic LevelDB batch. Undo restores this flag while preserving changes made to other preferences since the repair. It also turns off automatic repair.
 
 It does **not** modify Spotify's executable, application bundle, JavaScript, CSS, account subscription, ads, updates, or audio. No developer mode, Spicetify, or injected extension is required. Inspection opens a temporary copy; writing requires the real database's exclusive lock. The lock is never bypassed.
 
 New stock profiles without an override record are supported: the app reads the canonical username from Spotify's local `prefs` file and requires another existing storage key in that same namespace before creating the preference. Existing account namespaces with override records are also supported.
 
+## If it doesn't work
+
+Click **Report a problem** after a fix attempt. It also appears if settings cannot be found or read. The tool runs checks locally and explains common causes, such as a reset preference, locked database, unfamiliar settings format, or automatic repair waiting for Spotify to exit. It can verify the saved setting; it cannot prove what Spotify displays on your screen.
+
+Choose what went wrong and review **View report details**. To share it, check **I agree to send this report** and click **Send report**. Reports go privately to the developer. **No GitHub account, Spotify account connection, email address, or login is needed to report a problem.** You can also save a report locally instead.
+
+Reports contain a fixed set of fields: helper version, operating-system version and architecture, Spotify's last-launched version, installation type, running/settings state, recognized lyrics-flag values, error categories, last fix result, automatic-repair state, and a selected issue category. Unknown flag strings are replaced with `OTHER`. No arbitrary text, file paths, Spotify usernames, credentials, songs, screenshots, or full logs are accepted. See the [shared report schema](src/report-schema.mjs).
+
+The receiver uses Supabase in the US West region. Only the developer's backend role can read reports. Each report gets a random receipt ID, which is not a persistent device identifier. Supabase processes the network address needed to deliver a request and may keep infrastructure logs. For spam control, the function uses a secret-keyed, daily-changing hash of the network address; limit buckets expire after two days. Intake is capped at five reports per network address per hour and 200 reports total per day. Reports older than 90 days are removed when new reports arrive; the developer can also delete reports manually by receipt ID.
+
+The automatic checks use local rules. Reports give the maintainer information to investigate and update the fix; submitting one does not grant remote access to your computer.
+
 ## Privacy and backups
 
-The helper operates offline and has no analytics or network requests. It never asks for a Spotify password or token. It uses the canonical username only to locate the correct local preference. Backups contain the previous lyrics value, local storage-key identifier, and database path; they do not contain a whole Spotify profile or login credentials.
+Fixing and monitoring work offline. There is no background analytics. The app sends diagnostic data only when you review a report, give permission, and click Send. Failed sends are not queued or retried automatically. It never asks for a Spotify password or token. It uses the canonical username only to locate the correct local preference. Backups contain the previous lyrics value, local storage-key identifier, and database path; they do not contain a whole Spotify profile or login credentials.
 
-Its settings and undo backup stay in the current user's application data directory (`Classic Lyrics`). Temporary inspection copies are deleted after each check. Uninstalling the helper leaves the chosen Spotify preference in place; use **Undo my fix** first if you want the earlier behavior back.
+Its settings and undo backup stay in the current user's application data directory (`Classic Lyrics`). Temporary inspection copies are deleted after each check. Uninstalling the helper leaves the chosen Spotify preference in place; use **Undo** first if you want the earlier behavior back.
 
 ## Compatibility and limits
 
@@ -75,6 +87,8 @@ npm run dist:mac
 ```
 
 `node build/make-icons.cjs` regenerates the original project icons. The packaged app supports `--self-test --report=/path/to/report.json`; this uses a synthetic temporary database and never touches Spotify. GitHub Actions tests on Windows and macOS, builds the direct-download installers, smoke-tests packaged native modules, and publishes releases for `v*` tags. See [the release workflow](.github/workflows/release.yml).
+
+The report receiver source and setup notes are in [server/](server/README.md). The public-client key in `reporting-config.json` grants no read or direct write access to the private tables. Never replace it with a service-role key.
 
 ## Research and related projects
 

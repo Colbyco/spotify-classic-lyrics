@@ -1,17 +1,32 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
-<title>Classic Lyrics</title><link rel="stylesheet" href="style.css"></head>
+<title>Spotify lyrics fix</title><link rel="stylesheet" href="style.css"></head>
 <body><main>
-  <header><div class="brand"><img src="icon.png" alt="" width="42" height="42"><div>Classic Lyrics<span>FOR SPOTIFY DESKTOP</span></div></div><button id="source" class="text-button">Source ↗</button></header>
-  <div class="eyebrow">YOUR MUSIC. YOUR LAYOUT.</div>
-  <h1>Keep the words.<br><span>Keep the controls.</span></h1>
-  <p class="intro">Bring back lyrics beside your library, with playback controls always in reach.</p>
-  <div class="preview" aria-hidden="true"><div class="mock-nav"><i></i><i></i><i></i><i></i></div><div class="mock-lyrics"><b></b><b></b><b class="active"></b><b></b></div><div class="mock-art"><i></i><b></b><b></b></div><div class="mock-player"><i></i><span>◀ &nbsp; ● &nbsp; ▶</span><b></b></div></div>
-  <section class="status" aria-live="polite"><div class="status-line"><i id="dot"></i><h2 id="title">Checking Spotify…</h2><button id="check" class="text-button">Refresh</button></div><p id="message">Looking for your desktop app.</p></section>
-  <div class="actions"><button id="fix" class="primary">Restore classic lyrics</button><button id="spotify" class="secondary">Open Spotify ↗</button></div>
-  <section class="automatic"><div><h2>Keep it fixed automatically</h2><p>Check for resets after Spotify updates. Repairs wait until Spotify closes, so your music keeps playing.</p><small>Starts at sign-in and stays in the menu bar or system tray.</small></div><label class="switch"><input type="checkbox" id="auto" aria-label="Keep it fixed automatically"><span></span></label></section>
-  <footer><button id="undo" class="text-button" disabled>Undo my fix</button><span>Offline · No Spotify login required</span><button id="quit" class="text-button">Quit</button></footer>
-  <p class="footnote">Independent, open-source utility. Not affiliated with Spotify.</p>
+  <section id="home">
+    <h1>Spotify lyrics fix</h1>
+    <p id="message" class="description" aria-live="polite">Checking Spotify…</p>
+    <div class="actions"><button id="fix" class="primary" disabled>Fix lyrics layout</button><button id="undo" class="text-button" disabled>Undo</button></div>
+    <label class="automatic"><input type="checkbox" id="auto"><span>Reapply if Spotify resets it<small>Runs in the background. Waits until Spotify closes.</small></span></label>
+    <div class="support"><button id="check" class="text-button">Check again</button><button id="report" class="text-button" hidden>Report a problem</button></div>
+  </section>
+  <section id="report-view" hidden aria-labelledby="report-heading">
+    <button id="back" class="text-button back">← Back</button>
+    <h1 id="report-heading">Report a problem</h1>
+    <label class="field" for="issue">What went wrong?</label>
+    <select id="issue">
+      <option value="lyrics-still-fullscreen">Lyrics still take over the window</option>
+      <option value="fix-failed">The fix failed</option>
+      <option value="automatic-repair-failed">Automatic repair didn't work</option>
+      <option value="other">Something else</option>
+    </select>
+    <ul id="findings" class="findings" aria-live="polite"></ul>
+    <details><summary>View report details</summary><pre id="report-data"></pre></details>
+    <p class="privacy">Includes app and Spotify versions, your operating system, the lyrics setting, and error categories. No account details, songs, file paths, or full logs.</p>
+    <p class="privacy">Sent privately to the tool's developer using Supabase. The hosting service processes your IP address; a temporary daily hash helps limit spam. No account needed.</p>
+    <label class="consent"><input id="consent" type="checkbox"><span>I agree to send this report.</span></label>
+    <div class="actions"><button id="send" class="primary" disabled>Send report</button><button id="save" class="text-button">Save instead</button></div>
+    <p id="report-status" class="description" aria-live="polite"></p>
+  </section>
   <p id="error" class="error" role="alert" hidden></p>
 </main><script src="renderer.cjs"></script></body></html>

@@ -1,7 +1,7 @@
 {
   "name": "spotify-classic-lyrics",
   "productName": "Classic Lyrics",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Restore Spotify's classic desktop lyrics layout with a native preference.",
   "author": "Colby Baker",
   "license": "MIT",

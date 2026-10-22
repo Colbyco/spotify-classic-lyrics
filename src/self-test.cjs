@@ -16,7 +16,16 @@ async function run(report) {
     const candidate = { directory };
     await s.change(candidate, backup); assert.equal((await s.inspectSnapshot(candidate)).fixed, true);
     await s.change(candidate, backup, true); assert.equal((await s.inspectSnapshot(candidate)).values[0], 'ALWAYS_VISIBLE');
-    const result = JSON.stringify({ passed: true, platform: process.platform, arch: process.arch, checks: ['packaged native LevelDB', 'repair', 'snapshot inspection', 'undo'] });
+    const { validateReport } = await import('./report-schema.mjs');
+    const { Reports } = require('./reporting.cjs');
+    let uploads = 0;
+    const reports = new Reports(async () => { uploads++; throw new Error('Self-test must stay offline'); });
+    const diagnostic = validateReport({ schema: 1, appVersion: '1.0.1', platform: process.platform, osVersion: '1.0', architecture: process.arch, spotifyVersion: null, installation: 'desktop', spotifyRunning: false, storageState: 'fixed', flagValues: ['CONTROL'], readErrors: [], lastFix: 'saved', lastError: 'none', automaticRepair: false, issue: 'lyrics-still-fullscreen' });
+    const review = await reports.prepare(diagnostic);
+    await assert.rejects(reports.submit({ id: review.id, consent: false }), /permission/);
+    assert.equal(uploads, 0);
+    const uiChecks = await require('./ui-self-test.cjs').run();
+    const result = JSON.stringify({ passed: true, platform: process.platform, arch: process.arch, checks: ['packaged native LevelDB', 'repair', 'snapshot inspection', 'undo', 'packaged report schema', 'consent prevents upload', ...uiChecks] });
     if (report) await fs.writeFile(report, result); console.log(result);
   } finally {
     if (path.dirname(root) !== os.tmpdir() || !path.basename(root).startsWith('classic-lyrics-smoke-')) throw new Error('Invalid test cleanup path');

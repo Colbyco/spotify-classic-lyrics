@@ -9,6 +9,7 @@ permissions:
   contents: read
 jobs:
   build:
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -21,6 +22,7 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci
+        timeout-minutes: 5
       - run: node node_modules/electron/install.js
       - run: npm test
       - name: Build Windows installer and portable executable
@@ -64,6 +66,7 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v5
       - uses: actions/download-artifact@v4
         with:
           path: packages
@@ -74,4 +77,4 @@ jobs:
         run: |
           cd packages
           sha256sum *.exe *.dmg > SHA256SUMS.txt
-          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --title "Classic Lyrics $GITHUB_REF_NAME" --notes 'Restore the classic Spotify desktop lyrics layout. Download Setup.exe for Windows, or the universal .dmg for Intel and Apple silicon Macs. Optional automatic repair waits until Spotify closes. These builds are not publisher-signed/notarized; see the README for compatibility and details.' *.exe *.dmg SHA256SUMS.txt
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --title "Classic Lyrics $GITHUB_REF_NAME" --notes-file ../.github/release-notes.md *.exe *.dmg SHA256SUMS.txt
