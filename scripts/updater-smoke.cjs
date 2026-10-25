@@ -42,7 +42,7 @@ async function waitFor(name, timeout = 120_000) {
   while (Date.now() < until) {
     if (fs.existsSync(path.join(root, 'failure.json'))) throw new Error(await fsp.readFile(path.join(root, 'failure.json'), 'utf8'));
     try { return JSON.parse(await fsp.readFile(path.join(root, name), 'utf8')); }
-    catch (error) { if (error.code !== 'ENOENT') throw error; }
+    catch (error) { if (error.code !== 'ENOENT' && !(error instanceof SyntaxError)) throw error; }
     await delay(100);
   }
   throw new Error(`Timed out waiting for ${name}. Logs: ${root}`);
@@ -95,7 +95,9 @@ async function main() {
       npmRebuild: false,
       win: { target: ['nsis'], executableName: productName, artifactName: '${productName}-${version}.${ext}', signAndEditExecutable: false },
       nsis: { oneClick: true, perMachine: false, allowElevation: false, runAfterFinish: false, createDesktopShortcut: false, createStartMenuShortcut: false, artifactName: '${productName}-${version}.${ext}', deleteAppDataOnUninstall: false },
-      publish: { provider: 'generic', url: feed }
+      // An array replaces the production GitHub publish object rather than
+      // deep-merging its owner/repo fields into this test-only generic feed.
+      publish: [{ provider: 'generic', url: feed }]
     } });
   }
   const manifest = require('js-yaml').load(await fsp.readFile(path.join(feedDir, 'latest.yml'), 'utf8'));
@@ -111,7 +113,11 @@ async function main() {
   assert.ok(fs.existsSync(executable), 'Fixture did not install to its isolated directory');
   await fsp.mkdir(path.join(root, 'user-data'), { recursive: true });
   await fsp.writeFile(path.join(root, 'user-data', 'settings.json'), JSON.stringify(settings));
-  const control = value => fsp.writeFile(path.join(root, 'control.json'), JSON.stringify(value));
+  const control = async value => {
+    const temporary = path.join(root, 'control.tmp');
+    await fsp.writeFile(temporary, JSON.stringify(value));
+    await fsp.rename(temporary, path.join(root, 'control.json'));
+  };
 
   await control({ phase: 'background', allowInstall: false });
   const background = launch(executable);
@@ -145,13 +151,16 @@ async function main() {
   const events = (await fsp.readFile(path.join(root, 'events.jsonl'), 'utf8')).trim().split('\n').map(line => JSON.parse(line));
   assert.equal(events.filter(event => event.event === 'install-requested').length, 1);
   const report = { passed: true, oldVersion, newVersion, checksumRejected: true, explicitInstallGate: true, restarted: true, settingsPreserved: true, backgroundRequests: 0, requests, root };
-  await fsp.writeFile(path.join(root, 'result.json'), JSON.stringify(report, null, 2));
-  console.log(JSON.stringify(report, null, 2));
   const uninstallerName = (await fsp.readdir(path.dirname(executable))).find(name => /^Uninstall.*\.exe$/i.test(name));
   assert.ok(uninstallerName, 'Fixture uninstaller missing');
   const uninstaller = path.join(path.dirname(executable), uninstallerName);
   assertOwned(uninstaller);
   await run(uninstaller, ['/S']);
+  const uninstallDeadline = Date.now() + 30_000;
+  while (fs.existsSync(executable) && Date.now() < uninstallDeadline) await delay(100);
+  assert.equal(fs.existsSync(executable), false, 'Fixture did not uninstall');
+  await fsp.writeFile(path.join(root, 'result.json'), JSON.stringify(report, null, 2));
+  console.log(JSON.stringify(report, null, 2));
 }
 
 main().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => {
