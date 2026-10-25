@@ -1,5 +1,6 @@
 'use strict';
 const { app, BrowserWindow, ipcMain, dialog, Menu, Tray, nativeImage, nativeTheme, shell } = require('electron');
+if (process.argv.includes('--self-test') && process.argv.some(a => a.startsWith('--screenshots='))) app.disableHardwareAcceleration();
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');

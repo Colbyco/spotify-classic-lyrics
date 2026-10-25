@@ -28,17 +28,32 @@ async function run(screenshotDirectory) {
       default: throw new Error(`Unexpected test action: ${name}`);
     }
   });
-  const win = new BrowserWindow({ width: 440, height: 365, show: false, focusable: false, skipTaskbar: true, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, offscreen: true } });
+  const win = new BrowserWindow({ width: 440, height: 365, show: false, focusable: false, skipTaskbar: true, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, offscreen: true, backgroundThrottling: false } });
   try {
     await win.loadFile(path.join(__dirname, 'index.html'));
     const evaluate = source => win.webContents.executeJavaScript(source);
     const capture = async name => {
       if (!screenshotDirectory) return;
       await fs.mkdir(screenshotDirectory, { recursive: true });
-      const rect = await evaluate('({x: 0, y: 0, width: innerWidth, height: innerHeight})');
-      const image = await win.webContents.capturePage(rect, { stayHidden: true, stayAwake: true });
-      assert.ok(!image.isEmpty(), 'App screenshot must contain pixels');
-      await fs.writeFile(path.join(screenshotDirectory, `${name}.png`), image.toPNG());
+      const png = await new Promise((resolve, reject) => {
+        let frames = 0;
+        const finish = (error, image) => {
+          clearTimeout(timeout);
+          win.webContents.removeListener('paint', onPaint);
+          if (error) reject(error); else resolve(image.toPNG());
+        };
+        const onPaint = (_event, _dirty, image) => {
+          if (image.isEmpty()) return;
+          // Force a second frame so a pending resize or DOM update is included.
+          if (++frames < 2) win.webContents.invalidate();
+          else finish(null, image);
+        };
+        const timeout = setTimeout(() => finish(new Error('App screenshot did not render.')), 10000);
+        win.webContents.on('paint', onPaint);
+        win.webContents.startPainting();
+        win.webContents.invalidate();
+      });
+      await fs.writeFile(path.join(screenshotDirectory, `${name}.png`), png);
     };
     const waitFor = async expression => {
       for (let n = 0; n < 400; n++) {
