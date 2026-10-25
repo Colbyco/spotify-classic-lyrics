@@ -14,6 +14,8 @@ Windows 10/11 x64 · macOS 13+, Intel and Apple silicon.
 </tr>
 </table>
 
+[Light mode screenshot](docs/images/app-light.png)
+
 ## Use it
 
 1. Install the Windows download, or open the Mac download and drag **Classic Lyrics** to Applications.
