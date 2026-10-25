@@ -122,7 +122,7 @@ function createTray() {
 }
 async function start() {
   if (process.argv.includes('--self-test')) {
-    try { await require('./self-test.cjs').run(process.argv.find(a => a.startsWith('--report='))?.slice(9)); app.exit(0); }
+    try { await require('./self-test.cjs').run(process.argv.find(a => a.startsWith('--report='))?.slice(9), process.argv.find(a => a.startsWith('--screenshots='))?.slice(14)); app.exit(0); }
     catch (error) { console.error(error); app.exit(1); }
     return;
   }

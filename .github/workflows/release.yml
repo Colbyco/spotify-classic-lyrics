@@ -38,8 +38,9 @@ jobs:
         shell: pwsh
         run: |
           $report = Join-Path $env:RUNNER_TEMP 'classic-lyrics-smoke.json'
+          $screenshots = Join-Path $env:RUNNER_TEMP 'classic-lyrics-screenshots'
           $exe = Join-Path $PWD 'dist/win-unpacked/Classic Lyrics.exe'
-          $process = Start-Process -FilePath $exe -ArgumentList @('--self-test', "--report=$report") -WindowStyle Hidden -PassThru -Wait
+          $process = Start-Process -FilePath $exe -ArgumentList @('--self-test', "--report=$report", "--screenshots=$screenshots") -WindowStyle Hidden -PassThru -Wait
           if ($process.ExitCode -ne 0) { throw 'Packaged smoke test failed' }
           $result = Get-Content -Raw -LiteralPath $report | ConvertFrom-Json
           if (-not $result.passed) { throw 'No successful smoke-test result' }
@@ -52,6 +53,13 @@ jobs:
           "$EXE" --self-test --report="$RUNNER_TEMP/classic-lyrics-smoke.json"
           node -e 'if (!require(process.env.RUNNER_TEMP+"/classic-lyrics-smoke.json").passed) process.exit(1)'
           cat "$RUNNER_TEMP/classic-lyrics-smoke.json"
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Windows'
+        with:
+          name: app-screenshots
+          path: ${{ runner.temp }}/classic-lyrics-screenshots/*.png
+          if-no-files-found: error
+          retention-days: 7
       - uses: actions/upload-artifact@v4
         with:
           name: packages-${{ runner.os }}

@@ -5,7 +5,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { ClassicLevel } = require('classic-level');
 const s = require('./storage.cjs');
-async function run(report) {
+async function run(report, screenshotDirectory) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'classic-lyrics-smoke-'));
   try {
     const directory = path.join(root, 'leveldb'), backup = path.join(root, 'backup.json');
@@ -24,7 +24,7 @@ async function run(report) {
     const review = await reports.prepare(diagnostic);
     await assert.rejects(reports.submit({ id: review.id, consent: false }), /permission/);
     assert.equal(uploads, 0);
-    const uiChecks = await require('./ui-self-test.cjs').run();
+    const uiChecks = await require('./ui-self-test.cjs').run(screenshotDirectory);
     const result = JSON.stringify({ passed: true, platform: process.platform, arch: process.arch, checks: ['packaged native LevelDB', 'repair', 'snapshot inspection', 'undo', 'packaged report schema', 'consent prevents upload', ...uiChecks] });
     if (report) await fs.writeFile(report, result); console.log(result);
   } finally {
