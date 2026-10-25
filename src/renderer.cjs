@@ -5,6 +5,8 @@ const command = (name, arg) => window.classicLyrics.command(name, arg);
 function render(state) {
   $('message').textContent = state.message;
   $('auto').checked = state.autoRepair;
+  $('appearance').value = state.appearance || 'system';
+  $('appearance').disabled = pending || state.kind === 'working';
   $('fix').textContent = state.kind === 'fixed' ? 'Fixed' : state.kind === 'working' ? 'Working…' : 'Fix lyrics layout';
   $('fix').disabled = pending || !['needs-fix', 'error', 'unavailable'].includes(state.kind);
   $('undo').disabled = pending || !state.canUndo;
@@ -29,7 +31,7 @@ function renderReport(value) {
 async function act(name, value) {
   if (pending) return;
   pending = true; $('error').hidden = true;
-  for (const id of ['fix', 'undo', 'check', 'auto', 'report', 'send', 'save', 'back', 'issue', 'consent']) $(id).disabled = true;
+  for (const id of ['fix', 'undo', 'check', 'auto', 'report', 'send', 'save', 'back', 'issue', 'consent', 'appearance']) $(id).disabled = true;
   if (name === 'send-report') $('report-status').textContent = 'Sending…';
   try {
     const result = await command(name, value);
@@ -54,6 +56,7 @@ async function act(name, value) {
 }
 for (const id of ['fix', 'undo', 'check', 'report']) $(id).addEventListener('click', () => act(id));
 $('auto').addEventListener('change', event => act('auto', event.target.checked));
+$('appearance').addEventListener('change', event => act('appearance', event.target.value));
 $('back').addEventListener('click', () => act('report-close'));
 $('issue').addEventListener('change', event => act('report-issue', { id: report?.id, issue: event.target.value }));
 $('consent').addEventListener('change', () => { $('send').disabled = pending || !report || report.sent || !$('consent').checked; });

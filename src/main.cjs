@@ -9,6 +9,7 @@ const platform = require('./platform.cjs');
 const { runAtStartup } = require('./watcher.cjs');
 const diagnostics = require('./diagnostics.cjs');
 const { Reports } = require('./reporting.cjs');
+const { normalizeSettings, windowBackground, saveAppearance } = require('./appearance.cjs');
 const reports = new Reports();
 let lastFix = 'not-attempted', lastError = 'none', attempted = false;
 const REPOSITORY = 'https://github.com/Colbyco/spotify-classic-lyrics';
@@ -19,6 +20,7 @@ const indexUrl = pathToFileURL(path.join(__dirname, 'index.html')).href;
 
 function emit(patch) {
   state = { ...state, ...patch, autoRepair: settings?.autoRepair || false, version: app.getVersion() };
+  state.appearance = settings?.appearance || 'system';
   state.canReport = attempted || state.canUndo || ['fixed', 'error', 'not-found', 'unavailable'].includes(state.kind);
   if (window && !window.isDestroyed()) window.webContents.send('status', state);
   if (tray) tray.setToolTip(`Classic Lyrics — ${state.kind === 'fixed' ? 'classic layout is active' : 'open for status'}`);
@@ -102,7 +104,7 @@ async function repair({ undo = false, background = false } = {}) {
 }
 function showWindow() {
   if (window && !window.isDestroyed()) { window.show(); window.focus(); return; }
-  window = new BrowserWindow({ width: 440, height: 365, minWidth: 400, minHeight: 340, title: 'Spotify lyrics fix', backgroundColor: nativeTheme.shouldUseDarkColors ? '#202020' : '#fafafa', autoHideMenuBar: true,
+  window = new BrowserWindow({ width: 440, height: 365, minWidth: 400, minHeight: 340, title: 'Spotify lyrics fix', backgroundColor: windowBackground(nativeTheme.shouldUseDarkColors), autoHideMenuBar: true,
     icon: path.join(__dirname, 'icon.png'), webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, devTools: !app.isPackaged } });
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   window.webContents.on('will-navigate', (event, url) => { if (url !== indexUrl) event.preventDefault(); });
@@ -129,8 +131,8 @@ async function start() {
     return;
   }
   if (!app.requestSingleInstanceLock()) { app.quit(); return; }
-  settings = await storage.readJson(settingsFile(), { autoRepair: false });
-  settings = { autoRepair: settings.autoRepair === true };
+  settings = normalizeSettings(await storage.readJson(settingsFile(), {}));
+  nativeTheme.themeSource = settings.appearance;
   Menu.setApplicationMenu(process.platform === 'darwin' ? Menu.buildFromTemplate([{ label: 'Classic Lyrics', submenu: [{ role: 'about' }, { type: 'separator' }, { role: 'quit' }] }, { role: 'editMenu' }, { role: 'windowMenu' }]) : null);
   ipcMain.handle('command', async (event, command, argument) => {
     if (event.senderFrame.url !== indexUrl) throw new Error('Untrusted caller.');
@@ -140,6 +142,9 @@ async function start() {
       case 'fix': return repair();
       case 'undo': return repair({ undo: true });
       case 'auto': return setAuto(argument);
+      case 'appearance':
+        await saveAppearance(argument, { settings, persist: value => storage.writeJson(settingsFile(), value), nativeTheme });
+        return emit({});
       case 'report': {
         if (busy || checking) throw new Error('Wait for the current check to finish.');
         const report = await diagnostics.collect({ appVersion: app.getVersion(), automaticRepair: settings.autoRepair, lastFix, lastError });
@@ -171,4 +176,8 @@ async function start() {
 app.on('second-instance', showWindow);
 app.on('activate', () => { if (settings) showWindow(); });
 app.on('window-all-closed', () => { if (!process.argv.includes('--self-test')) app.quit(); });
+nativeTheme.on('updated', () => {
+  if (window && !window.isDestroyed()) window.setBackgroundColor(windowBackground(nativeTheme.shouldUseDarkColors));
+  if (settings) emit({});
+});
 app.whenReady().then(start).catch(error => { dialog.showErrorBox('Classic Lyrics', friendly(error)); app.quit(); });

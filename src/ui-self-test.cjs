@@ -2,13 +2,18 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const { BrowserWindow, ipcMain } = require('electron');
+const { BrowserWindow, ipcMain, nativeTheme } = require('electron');
 const { Reports } = require('./reporting.cjs');
+const { normalizeSettings, saveAppearance, windowBackground } = require('./appearance.cjs');
 
 // Runs only inside --self-test on build machines. Uses the shipped renderer and
 // preload, synthetic state and a stub transport. Never calls Spotify or uploads.
 async function run(screenshotDirectory) {
-  let uploads = 0, status = { kind: 'needs-fix', message: 'Put lyrics back beside your library and playback controls.', canUndo: false, canReport: false, autoRepair: false };
+  const originalTheme = nativeTheme.themeSource;
+  const preferences = normalizeSettings({});
+  let savedPreferences;
+  nativeTheme.themeSource = preferences.appearance;
+  let uploads = 0, status = { kind: 'needs-fix', message: 'Put lyrics back beside your library and playback controls.', canUndo: false, canReport: false, autoRepair: false, appearance: preferences.appearance };
   const reports = new Reports(async (_url, options) => {
     uploads++;
     const body = JSON.parse(options.body); assert.equal(body.consent, true);
@@ -20,6 +25,9 @@ async function run(screenshotDirectory) {
     commands.push(name);
     switch (name) {
       case 'status': return status;
+      case 'appearance':
+        await saveAppearance(argument, { settings: preferences, nativeTheme, persist: async value => { savedPreferences = structuredClone(value); } });
+        status = { ...status, appearance: preferences.appearance }; return status;
       case 'fix': status = { ...status, kind: 'fixed', canUndo: true, canReport: true, message: 'The lyrics setting is saved.' }; return status;
       case 'report': return reports.prepare(example);
       case 'report-issue': return reports.update(argument.id, argument.issue);
@@ -71,11 +79,33 @@ async function run(screenshotDirectory) {
       }
       throw new Error(`Renderer did not reach: ${expression}`);
     };
+    const chooseTheme = async mode => {
+      await evaluate(`document.getElementById('appearance').value=${JSON.stringify(mode)}; document.getElementById('appearance').dispatchEvent(new Event('change'))`);
+      await waitFor(`!document.getElementById('appearance').disabled && document.getElementById('appearance').value === ${JSON.stringify(mode)}`);
+      const dark = nativeTheme.shouldUseDarkColors;
+      await waitFor(`matchMedia('(prefers-color-scheme: dark)').matches === ${dark}`);
+      const rgb = windowBackground(dark).slice(1).match(/../g).map(hex => parseInt(hex, 16));
+      await waitFor(`getComputedStyle(document.body).backgroundColor === ${JSON.stringify('rgb(' + rgb.join(', ') + ')')}`);
+      assert.equal(savedPreferences.appearance, mode);
+      assert.equal(savedPreferences.autoRepair, false);
+    };
+    const checkContrast = async () => {
+      const colors = await evaluate(`(() => { const body=getComputedStyle(document.body), muted=getComputedStyle(document.getElementById('message')), button=getComputedStyle(document.getElementById('fix')); return { text:body.color, surface:body.backgroundColor, muted:muted.color, action:button.backgroundColor, actionText:button.color }; })()`);
+      const luminance = color => color.match(/[\d.]+/g).slice(0, 3).map(Number).map(v => v / 255).map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4).reduce((sum, v, i) => sum + v * [.2126, .7152, .0722][i], 0);
+      const contrast = (a, b) => (Math.max(luminance(a), luminance(b)) + .05) / (Math.min(luminance(a), luminance(b)) + .05);
+      assert.ok(contrast(colors.text, colors.surface) >= 4.5, 'Body text needs readable contrast');
+      assert.ok(contrast(colors.muted, colors.surface) >= 4.5, 'Supporting text needs readable contrast');
+      assert.ok(contrast(colors.actionText, colors.action) >= 4.5, 'Primary action needs readable contrast');
+    };
     await waitFor('!document.getElementById("fix").disabled');
     assert.equal(await evaluate('document.getElementById("report").hidden'), true);
     const bounds = await evaluate('({width: innerWidth, height: innerHeight, scrollWidth: document.documentElement.scrollWidth, scrollHeight: document.documentElement.scrollHeight})');
     assert.ok(bounds.scrollWidth <= bounds.width && bounds.scrollHeight <= bounds.height, 'Compact view must fit its window');
-    await capture('app');
+    assert.equal(await evaluate('document.getElementById("appearance").value'), 'system');
+    assert.equal(nativeTheme.themeSource, 'system');
+    assert.equal(await evaluate('matchMedia("(prefers-color-scheme: dark)").matches'), nativeTheme.shouldUseDarkColors);
+    await chooseTheme('light'); await checkContrast(); await capture('app-light');
+    await chooseTheme('dark'); await checkContrast(); await capture('app');
     await evaluate('document.getElementById("fix").click()');
     await waitFor('!document.getElementById("report").hidden && !document.getElementById("report").disabled');
     assert.equal(await evaluate('document.getElementById("fix").textContent'), 'Fixed');
@@ -111,8 +141,10 @@ async function run(screenshotDirectory) {
     assert.equal(await evaluate('document.getElementById("send").disabled'), true);
     await evaluate('document.getElementById("back").click()');
     await waitFor('!document.getElementById("home").hidden');
+    await chooseTheme('system');
+    assert.equal(nativeTheme.themeSource, 'system');
     assert.ok(commands.includes('report-issue') && commands.includes('send-report'));
-    return ['compact renderer fits window', 'report appears after fix', 'review is local', 'report edits clear consent', 'consent-gated send through preload', 'receipt and back navigation'];
-  } finally { win.destroy(); ipcMain.removeHandler('command'); }
+    return ['compact renderer fits window', 'system appearance default', 'live light and dark switching', 'text and button contrast', 'appearance selection saved', 'report appears after fix', 'review is local', 'report edits clear consent', 'consent-gated send through preload', 'receipt and back navigation'];
+  } finally { win.destroy(); ipcMain.removeHandler('command'); nativeTheme.themeSource = originalTheme; }
 }
 module.exports = { run };

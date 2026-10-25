@@ -1,14 +1,20 @@
-:root { color-scheme: light dark; --surface: light-dark(#fafafa, #202020); --text: light-dark(#242424, #eee); --muted: light-dark(#626262, #b5b5b5); --line: light-dark(#ddd, #444); --action: light-dark(#303030, #e2e2e2); --action-text: light-dark(#fff, #202020); --hover: light-dark(#eee, #303030); }
+:root { color-scheme: light dark; --surface: light-dark(#faf8fc, #1c1a21); --text: light-dark(#282132, #f1edf7); --muted: light-dark(#62586f, #c0b8ca); --line: light-dark(#92849f, #71617f); --action: light-dark(#68449a, #b7a0e6); --action-text: light-dark(#fff, #24172f); --action-hover: light-dark(#573482, #c7b2ee); --hover: light-dark(#eee7f5, #2d2636); --focus: light-dark(#68449a, #c5a5ff); }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--surface); color: var(--text); font: 14px/1.5 "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif; }
 main { padding: 23px; }
 h1 { margin: 0 0 6px; font-size: 17px; line-height: 1.4; font-weight: 500; }
+.heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.heading h1 { margin: 0; }
+.appearance-control { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
+.appearance-control select { width: 86px; padding: 4px 5px; font-size: 12px; }
 .description { color: var(--muted); margin: 0 0 18px; }
 button, select { font: inherit; }
 button { cursor: pointer; }
 button:disabled { cursor: default; opacity: .5; }
 .actions { display: flex; align-items: center; gap: 10px; }
 .primary { flex: 1; padding: 9px 14px; border: 1px solid transparent; border-radius: 5px; background: var(--action); color: var(--action-text); font-weight: 500; }
+.primary:hover:not(:disabled) { background: var(--action-hover); }
+button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 .text-button { padding: 6px; border: 0; border-radius: 3px; color: var(--muted); background: transparent; font-size: 12px; }
 .text-button:hover:not(:disabled) { color: var(--text); background: var(--hover); }
 .automatic, .consent { display: flex; align-items: flex-start; gap: 9px; margin-top: 20px; cursor: pointer; font-size: 13px; }
@@ -23,7 +29,7 @@ select { display: block; width: 100%; padding: 7px; border: 1px solid var(--line
 .findings li + li { margin-top: 8px; }
 details { font-size: 12px; margin: 14px 0; }
 summary { cursor: pointer; color: var(--muted); }
-pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 11px; line-height: 1.5; padding: 10px; border: 1px solid var(--line); border-radius: 4px; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 11px; line-height: 1.5; padding: 10px; border: 1px solid var(--line); border-radius: 4px; background: light-dark(#f1ecf7, #25212c); }
 .privacy { font-size: 12px; color: var(--muted); margin: 12px 0; }
 .consent { margin: 19px 0 14px; }
 #report-status { font-size: 12px; margin: 12px 0 0; overflow-wrap: anywhere; }

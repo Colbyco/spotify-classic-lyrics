@@ -2,7 +2,7 @@
 
 Puts lyrics back beside your library and playback controls.
 
-**[Windows (.exe)](https://github.com/Colbyco/spotify-classic-lyrics/releases/latest/download/Classic-Lyrics-Setup-1.0.2.exe)** · **[Mac (.dmg)](https://github.com/Colbyco/spotify-classic-lyrics/releases/latest/download/Classic-Lyrics-1.0.2-macOS-Universal.dmg)** · [All downloads](https://github.com/Colbyco/spotify-classic-lyrics/releases/latest)
+**[Windows (.exe)](https://github.com/Colbyco/spotify-classic-lyrics/releases/latest/download/Classic-Lyrics-Setup-1.0.3.exe)** · **[Mac (.dmg)](https://github.com/Colbyco/spotify-classic-lyrics/releases/latest/download/Classic-Lyrics-1.0.3-macOS-Universal.dmg)** · [All downloads](https://github.com/Colbyco/spotify-classic-lyrics/releases/latest)
 
 Windows 10/11 x64 · macOS 13+, Intel and Apple silicon.
 
@@ -19,6 +19,8 @@ Windows 10/11 x64 · macOS 13+, Intel and Apple silicon.
 1. Install the Windows download, or open the Mac download and drag **Classic Lyrics** to Applications.
 2. Open it and click **Fix lyrics layout**. It asks before restarting Spotify if needed.
 3. Open Lyrics in Spotify. **Undo** restores your previous setting.
+
+Appearance follows your system by default. Use **Theme** to choose **Dark** or **Light**.
 
 Windows builds are unsigned; the Mac app is not notarized. Your OS may show a warning.
 
