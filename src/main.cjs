@@ -10,10 +10,11 @@ const { runAtStartup } = require('./watcher.cjs');
 const diagnostics = require('./diagnostics.cjs');
 const { Reports } = require('./reporting.cjs');
 const { normalizeSettings, windowBackground, saveAppearance } = require('./appearance.cjs');
+const { supportsUpdates, createUpdates } = require('./updates.cjs');
 const reports = new Reports();
 let lastFix = 'not-attempted', lastError = 'none', attempted = false;
 const REPOSITORY = 'https://github.com/Colbyco/spotify-classic-lyrics';
-let window, tray, settings, state = { kind: 'checking', message: 'Looking for Spotify…', autoRepair: false }, checking = false, busy = false;
+let window, tray, settings, updates, state = { kind: 'checking', message: 'Looking for Spotify…', autoRepair: false }, checking = false, busy = false;
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
 const backupFile = () => path.join(app.getPath('userData'), 'lyrics-backup.json');
 const indexUrl = pathToFileURL(path.join(__dirname, 'index.html')).href;
@@ -21,6 +22,7 @@ const indexUrl = pathToFileURL(path.join(__dirname, 'index.html')).href;
 function emit(patch) {
   state = { ...state, ...patch, autoRepair: settings?.autoRepair || false, version: app.getVersion() };
   state.appearance = settings?.appearance || 'system';
+  state.update = updates?.state || null;
   state.canReport = attempted || state.canUndo || ['fixed', 'error', 'not-found', 'unavailable'].includes(state.kind);
   if (window && !window.isDestroyed()) window.webContents.send('status', state);
   if (tray) tray.setToolTip(`Classic Lyrics — ${state.kind === 'fixed' ? 'classic layout is active' : 'open for status'}`);
@@ -142,6 +144,10 @@ async function start() {
       case 'fix': return repair();
       case 'undo': return repair({ undo: true });
       case 'auto': return setAuto(argument);
+      case 'update-check': await updates?.check(); return emit({});
+      case 'update-install':
+        if (!updates) throw new Error('Automatic updates are available in Windows Setup.');
+        updates.install(); return state;
       case 'appearance':
         await saveAppearance(argument, { settings, persist: value => storage.writeJson(settingsFile(), value), nativeTheme });
         return emit({});
@@ -172,6 +178,10 @@ async function start() {
   const background = process.argv.includes('--background') || (process.platform === 'darwin' && app.getLoginItemSettings().wasOpenedAtLogin);
   await runAtStartup({ enabled: settings.autoRepair, background, inspect: check,
     repair: () => repair({ background: true }), openWindow: () => { createTray(); showWindow(); }, quit: () => app.quit() });
+  if (supportsUpdates({ packaged: app.isPackaged, platform: process.platform, portable: !!process.env.PORTABLE_EXECUTABLE_FILE, background })) {
+    updates = createUpdates({ updater: require('electron-updater').autoUpdater, onChange: () => emit({}), canInstall: () => !busy && !checking && !reports.sending });
+    void updates.check();
+  }
 }
 app.on('second-instance', showWindow);
 app.on('activate', () => { if (settings) showWindow(); });

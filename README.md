@@ -2,7 +2,7 @@
 
 Puts lyrics back beside your library and playback controls.
 
-**[Windows (.exe)](https://github.com/Colbyco/spotify-classic-lyrics/releases/latest/download/Classic-Lyrics-Setup-1.0.3.exe)** · **[Mac (.dmg)](https://github.com/Colbyco/spotify-classic-lyrics/releases/latest/download/Classic-Lyrics-1.0.3-macOS-Universal.dmg)** · [All downloads](https://github.com/Colbyco/spotify-classic-lyrics/releases/latest)
+**[Windows (.exe)](https://github.com/Colbyco/spotify-classic-lyrics/releases/latest/download/Classic-Lyrics-Setup-1.0.4.exe)** · **[Mac (.dmg)](https://github.com/Colbyco/spotify-classic-lyrics/releases/latest/download/Classic-Lyrics-1.0.4-macOS-Universal.dmg)** · [All downloads](https://github.com/Colbyco/spotify-classic-lyrics/releases/latest)
 
 Windows 10/11 x64 · macOS 13+, Intel and Apple silicon.
 
@@ -23,6 +23,8 @@ Windows 10/11 x64 · macOS 13+, Intel and Apple silicon.
 3. Open Lyrics in Spotify. **Undo** restores your previous setting.
 
 Appearance follows your system by default. Use **Theme** to choose **Dark** or **Light**.
+
+Windows Setup checks for app updates when opened, downloads them, and offers **Restart to update**. Existing users need to install 1.0.4 once to enable this. Mac and portable updates are manual.
 
 Windows builds are unsigned; the Mac app is not notarized. Your OS may show a warning.
 

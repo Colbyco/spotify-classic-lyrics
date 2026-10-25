@@ -9,7 +9,7 @@ permissions:
   contents: read
 jobs:
   build:
-    timeout-minutes: 20
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:
@@ -25,9 +25,16 @@ jobs:
         timeout-minutes: 5
       - run: node node_modules/electron/install.js
       - run: npm test
+      - name: Test installed Windows updater
+        if: runner.os == 'Windows'
+        timeout-minutes: 12
+        run: node scripts/updater-smoke.cjs
       - name: Build Windows installer and portable executable
         if: runner.os == 'Windows'
         run: npm run dist:win
+      - name: Verify Windows update metadata
+        if: runner.os == 'Windows'
+        run: node scripts/verify-update-feed.cjs dist
       - name: Build universal Mac disk image
         if: runner.os == 'macOS'
         run: npm run dist:mac
@@ -67,6 +74,8 @@ jobs:
           path: |
             dist/*.exe
             dist/*.dmg
+            dist/*.yml
+            dist/*.blockmap
           if-no-files-found: error
   release:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -79,11 +88,13 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: packages
+          pattern: packages-*
           merge-multiple: true
       - name: Publish direct downloads and checksums
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           cd packages
-          sha256sum *.exe *.dmg > SHA256SUMS.txt
-          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --title "Classic Lyrics $GITHUB_REF_NAME" --notes-file ../.github/release-notes.md *.exe *.dmg SHA256SUMS.txt
+          sha256sum *.exe *.dmg *.yml *.blockmap > SHA256SUMS.txt
+          gh release create "$GITHUB_REF_NAME" --draft --verify-tag --repo "$GITHUB_REPOSITORY" --title "Classic Lyrics $GITHUB_REF_NAME" --notes-file ../.github/release-notes.md *.exe *.dmg *.yml *.blockmap SHA256SUMS.txt
+          gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false --latest

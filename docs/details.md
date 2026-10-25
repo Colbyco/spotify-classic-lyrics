@@ -34,6 +34,16 @@ Its settings and undo backup stay in the current user's application data directo
 
 ## Compatibility and limits
 
+### App updates
+
+Windows Setup 1.0.4 and newer check the public GitHub release feed once when you open the helper. New stable versions download automatically; **Restart to update** installs the downloaded version and reopens the helper. Download integrity is checked against the release's SHA-512 hash. The updater never restarts Spotify, installs on ordinary app exit, accepts downgrades or prereleases, or runs during the quiet sign-in repair or self-tests. Offline failures leave the fix usable and can be retried with **Check updates**.
+
+This check connects to GitHub and its download infrastructure, which receive the network information needed to serve the request. It sends no diagnostic report, Spotify settings, or account information. There is no GitHub login or credential in the client.
+
+Versions through 1.0.3 need one manual upgrade to enable future Windows updates. Mac and Windows portable releases update manually. Mac automatic installation is not enabled because these builds do not have Developer ID signing.
+
+### Spotify compatibility
+
 - Windows 10/11 x64, including discovery of common Microsoft Store profile paths.
 - macOS 13 (Ventura) or newer, with a universal app for Intel and Apple silicon.
 - The native flag repair was verified against **Spotify for Windows 1.3.6.1921**. macOS builds run the same repair/undo tests and packaged-native-module smoke test in CI; the layout has not been visually verified against a live Mac Spotify installation.

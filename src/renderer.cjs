@@ -14,6 +14,13 @@ function render(state) {
   $('auto').disabled = pending || state.kind === 'working';
   $('report').hidden = !state.canReport;
   $('report').disabled = pending || state.kind === 'working';
+  const update = state.update;
+  $('updates').hidden = !update;
+  $('update-status').textContent = update ? (update.message || `v${state.version}`) : '';
+  $('update-check').hidden = ['ready', 'installing'].includes(update?.kind);
+  $('update-check').disabled = pending || ['checking', 'downloading'].includes(update?.kind);
+  $('update-install').hidden = update?.kind !== 'ready';
+  $('update-install').disabled = pending || state.kind === 'working';
 }
 function renderReport(value) {
   report = value;
@@ -31,7 +38,7 @@ function renderReport(value) {
 async function act(name, value) {
   if (pending) return;
   pending = true; $('error').hidden = true;
-  for (const id of ['fix', 'undo', 'check', 'auto', 'report', 'send', 'save', 'back', 'issue', 'consent', 'appearance']) $(id).disabled = true;
+  for (const id of ['fix', 'undo', 'check', 'auto', 'report', 'send', 'save', 'back', 'issue', 'consent', 'appearance', 'update-check', 'update-install']) $(id).disabled = true;
   if (name === 'send-report') $('report-status').textContent = 'Sending…';
   try {
     const result = await command(name, value);
@@ -54,7 +61,7 @@ async function act(name, value) {
     $('consent').disabled = report?.sent || false;
   }
 }
-for (const id of ['fix', 'undo', 'check', 'report']) $(id).addEventListener('click', () => act(id));
+for (const id of ['fix', 'undo', 'check', 'report', 'update-check', 'update-install']) $(id).addEventListener('click', () => act(id));
 $('auto').addEventListener('change', event => act('auto', event.target.checked));
 $('appearance').addEventListener('change', event => act('appearance', event.target.value));
 $('back').addEventListener('click', () => act('report-close'));

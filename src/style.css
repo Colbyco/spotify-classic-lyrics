@@ -21,6 +21,8 @@ button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-v
 input[type=checkbox] { flex: none; width: 15px; height: 15px; margin: 3px 0 0; accent-color: var(--action); }
 small { display: block; color: var(--muted); font-size: 12px; margin-top: 3px; }
 .support { display: flex; justify-content: space-between; gap: 8px; margin-top: 14px; }
+.updates { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid var(--line); margin-top: 7px; padding-top: 4px; color: var(--muted); font-size: 11px; }
+.updates button { flex-shrink: 0; }
 .error { color: light-dark(#a81f25, #ffa5aa); margin: 12px 0 0; font-size: 13px; overflow-wrap: anywhere; }
 .back { padding-left: 0; margin: -7px 0 12px; }
 .field { display: block; margin: 19px 0 5px; font-size: 13px; }

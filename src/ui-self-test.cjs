@@ -13,7 +13,7 @@ async function run(screenshotDirectory) {
   const preferences = normalizeSettings({});
   let savedPreferences;
   nativeTheme.themeSource = preferences.appearance;
-  let uploads = 0, status = { kind: 'needs-fix', message: 'Put lyrics back beside your library and playback controls.', canUndo: false, canReport: false, autoRepair: false, appearance: preferences.appearance };
+  let uploads = 0, status = { kind: 'needs-fix', message: 'Put lyrics back beside your library and playback controls.', canUndo: false, canReport: false, autoRepair: false, appearance: preferences.appearance, version: require('../package.json').version, update: process.platform === 'win32' ? { kind: 'current', message: 'Up to date' } : null };
   const reports = new Reports(async (_url, options) => {
     uploads++;
     const body = JSON.parse(options.body); assert.equal(body.consent, true);
@@ -25,6 +25,8 @@ async function run(screenshotDirectory) {
     commands.push(name);
     switch (name) {
       case 'status': return status;
+      case 'update-check': status = { ...status, update: { kind: 'ready', message: 'Version 1.0.5 is ready' } }; return status;
+      case 'update-install': status = { ...status, update: { kind: 'installing', message: 'Restarting to update…' } }; return status;
       case 'appearance':
         await saveAppearance(argument, { settings: preferences, nativeTheme, persist: async value => { savedPreferences = structuredClone(value); } });
         status = { ...status, appearance: preferences.appearance }; return status;
@@ -106,6 +108,16 @@ async function run(screenshotDirectory) {
     assert.equal(await evaluate('matchMedia("(prefers-color-scheme: dark)").matches'), nativeTheme.shouldUseDarkColors);
     await chooseTheme('light'); await checkContrast(); await capture('app-light');
     await chooseTheme('dark'); await checkContrast(); await capture('app');
+    if (process.platform === 'win32') {
+      await evaluate('document.getElementById("update-check").click()');
+      await waitFor('!document.getElementById("update-install").hidden && !document.getElementById("update-install").disabled');
+      assert.equal(await evaluate('document.getElementById("update-check").hidden'), true);
+      const readyBounds = await evaluate('({ height: innerHeight, scrollHeight: document.documentElement.scrollHeight })');
+      assert.ok(readyBounds.scrollHeight <= readyBounds.height, 'Update controls must fit compact window');
+      await capture('update');
+      await evaluate('document.getElementById("update-install").click()');
+      await waitFor('document.getElementById("update-status").textContent === "Restarting to update…"');
+    } else assert.equal(await evaluate('document.getElementById("updates").hidden'), true);
     await evaluate('document.getElementById("fix").click()');
     await waitFor('!document.getElementById("report").hidden && !document.getElementById("report").disabled');
     assert.equal(await evaluate('document.getElementById("fix").textContent'), 'Fixed');

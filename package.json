@@ -1,7 +1,7 @@
 {
   "name": "spotify-classic-lyrics",
   "productName": "Classic Lyrics",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Restore Spotify's classic desktop lyrics layout with a native preference.",
   "author": "Colby Baker",
   "license": "MIT",
@@ -15,7 +15,8 @@
     "pack": "electron-builder --dir --publish never"
   },
   "dependencies": {
-    "classic-level": "3.0.0"
+    "classic-level": "3.0.0",
+    "electron-updater": "6.8.11"
   },
   "devDependencies": {
     "electron": "45.0.0",
