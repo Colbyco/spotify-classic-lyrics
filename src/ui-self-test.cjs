@@ -28,7 +28,8 @@ async function run(screenshotDirectory) {
       default: throw new Error(`Unexpected test action: ${name}`);
     }
   });
-  const win = new BrowserWindow({ width: 440, height: 365, show: !!screenshotDirectory, focusable: false, skipTaskbar: true, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, offscreen: true, backgroundThrottling: false } });
+  const makeWindow = (width, height) => new BrowserWindow({ width, height, show: !!screenshotDirectory, focusable: false, skipTaskbar: true, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, offscreen: true, backgroundThrottling: false } });
+  let win = makeWindow(440, 365);
   try {
     await win.loadFile(path.join(__dirname, 'index.html'));
     if (screenshotDirectory) win.showInactive();
@@ -78,6 +79,16 @@ async function run(screenshotDirectory) {
     await evaluate('document.getElementById("fix").click()');
     await waitFor('!document.getElementById("report").hidden && !document.getElementById("report").disabled');
     assert.equal(await evaluate('document.getElementById("fix").textContent'), 'Fixed');
+    if (screenshotDirectory) {
+      // A fresh offscreen surface avoids Windows retaining the old clip bounds
+      // when a software-rendered window is resized for the report screen.
+      const previous = win;
+      win = makeWindow(460, 690);
+      await win.loadFile(path.join(__dirname, 'index.html'));
+      win.showInactive();
+      previous.destroy();
+      await waitFor('!document.getElementById("report").hidden && !document.getElementById("report").disabled');
+    }
     await evaluate('document.getElementById("report").click()');
     await waitFor('!document.getElementById("report-view").hidden && !document.getElementById("issue").disabled');
     assert.equal(await evaluate('document.getElementById("send").disabled'), true);
