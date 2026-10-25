@@ -5,13 +5,13 @@ const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const storage = require('./storage.cjs');
 const platform = require('./platform.cjs');
-const { watchOnce } = require('./watcher.cjs');
+const { runAtStartup } = require('./watcher.cjs');
 const diagnostics = require('./diagnostics.cjs');
 const { Reports } = require('./reporting.cjs');
 const reports = new Reports();
 let lastFix = 'not-attempted', lastError = 'none', attempted = false;
 const REPOSITORY = 'https://github.com/Colbyco/spotify-classic-lyrics';
-let window, tray, settings, state = { kind: 'checking', message: 'Looking for Spotify…', autoRepair: false }, checking = false, busy = false, quitting = false;
+let window, tray, settings, state = { kind: 'checking', message: 'Looking for Spotify…', autoRepair: false }, checking = false, busy = false;
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
 const backupFile = () => path.join(app.getPath('userData'), 'lyrics-backup.json');
 const indexUrl = pathToFileURL(path.join(__dirname, 'index.html')).href;
@@ -37,7 +37,7 @@ async function check() {
     const running = await platform.isSpotifyRunning();
     const fixed = statuses.length > 0 && !failures && statuses.every(s => s.fixed);
     return emit({ kind: fixed ? 'fixed' : statuses.length ? 'needs-fix' : candidates.length ? 'unavailable' : 'not-found',
-      message: fixed ? 'The lyrics setting is saved. Open Lyrics in Spotify to check it.' : statuses.length ? (settings.autoRepair && running ? 'The setting reset. It will be fixed when Spotify closes.' : 'Put lyrics back beside your library and playback controls.') : candidates.length ? 'Quit Spotify and check again. If it is a new install, sign in and play a song first.' : 'Open Spotify, sign in, and play a song. Then check again.',
+      message: fixed ? 'The lyrics setting is saved. Open Lyrics in Spotify to check it.' : statuses.length ? (settings.autoRepair && running ? 'Spotify is open. Use Fix lyrics layout to apply the setting with a restart.' : 'Put lyrics back beside your library and playback controls.') : candidates.length ? 'Quit Spotify and check again. If it is a new install, sign in and play a song first.' : 'Open Spotify, sign in, and play a song. Then check again.',
       running, profiles: statuses.reduce((sum, s) => sum + s.profiles, 0), canUndo: backup.records.length > 0, lastChecked: Date.now(), readErrors: failures });
   } catch (error) { return emit({ kind: 'error', message: friendly(error), lastChecked: Date.now() }); }
   finally { checking = false; }
@@ -55,7 +55,7 @@ async function setAuto(enabled) {
   app.setLoginItemSettings({ openAtLogin: enabled, args: ['--background'] });
   settings.autoRepair = enabled;
   await storage.writeJson(settingsFile(), settings);
-  emit({ message: enabled ? 'Automatic repair is on. Spotify is never interrupted in the background.' : 'Automatic repair is off.' });
+  emit({ message: enabled ? 'Automatic repair will run when this tool starts, if Spotify is closed.' : 'Automatic repair is off.' });
   await check();
   return state;
 }
@@ -96,11 +96,8 @@ async function repair({ undo = false, background = false } = {}) {
   if (!undo) { lastFix = error ? 'failed' : state.kind === 'fixed' ? 'saved' : 'failed'; lastError = error ? diagnostics.errorCategory(error) : lastFix === 'saved' ? 'none' : 'other'; }
   if (error) emit({ kind: 'error', message: friendly(error) });
   else if (undo) { lastFix = 'not-attempted'; lastError = 'none'; emit({ message: 'Your previous lyrics preference was restored. Automatic repair is off.' }); }
-  else emit({ message: background ? 'The lyrics setting was reapplied while Spotify was closed.' : 'The lyrics setting is saved. Open Lyrics in Spotify to check it.' });
+  else emit({ message: background ? 'The lyrics setting was reapplied at startup while Spotify was closed.' : 'The lyrics setting is saved. Open Lyrics in Spotify to check it.' });
   return state;
-}
-async function tick() {
-  await watchOnce({ enabled: settings.autoRepair, inspect: check, repair: () => repair({ background: true }) });
 }
 function showWindow() {
   if (window && !window.isDestroyed()) { window.show(); window.focus(); return; }
@@ -109,7 +106,6 @@ function showWindow() {
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   window.webContents.on('will-navigate', (event, url) => { if (url !== indexUrl) event.preventDefault(); });
   window.loadFile(path.join(__dirname, 'index.html'));
-  window.on('close', event => { if (!quitting && settings.autoRepair) { event.preventDefault(); window.hide(); } });
   window.on('closed', () => { window = null; });
 }
 function createTray() {
@@ -134,7 +130,6 @@ async function start() {
   settings = await storage.readJson(settingsFile(), { autoRepair: false });
   settings = { autoRepair: settings.autoRepair === true };
   Menu.setApplicationMenu(process.platform === 'darwin' ? Menu.buildFromTemplate([{ label: 'Classic Lyrics', submenu: [{ role: 'about' }, { type: 'separator' }, { role: 'quit' }] }, { role: 'editMenu' }, { role: 'windowMenu' }]) : null);
-  createTray();
   ipcMain.handle('command', async (event, command, argument) => {
     if (event.senderFrame.url !== indexUrl) throw new Error('Untrusted caller.');
     switch (command) {
@@ -168,12 +163,10 @@ async function start() {
     }
   });
   const background = process.argv.includes('--background') || (process.platform === 'darwin' && app.getLoginItemSettings().wasOpenedAtLogin);
-  if (!background || !settings.autoRepair) showWindow();
-  await tick();
-  setInterval(() => { if (settings.autoRepair || window?.isVisible()) tick().catch(() => {}); }, 15000).unref();
+  await runAtStartup({ enabled: settings.autoRepair, background, inspect: check,
+    repair: () => repair({ background: true }), openWindow: () => { createTray(); showWindow(); }, quit: () => app.quit() });
 }
 app.on('second-instance', showWindow);
 app.on('activate', () => { if (settings) showWindow(); });
-app.on('before-quit', () => { quitting = true; });
-app.on('window-all-closed', () => { if (!process.argv.includes('--self-test') && !settings?.autoRepair) app.quit(); });
+app.on('window-all-closed', () => { if (!process.argv.includes('--self-test')) app.quit(); });
 app.whenReady().then(start).catch(error => { dialog.showErrorBox('Classic Lyrics', friendly(error)); app.quit(); });

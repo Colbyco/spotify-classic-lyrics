@@ -20,7 +20,7 @@ async function run(report) {
     const { Reports } = require('./reporting.cjs');
     let uploads = 0;
     const reports = new Reports(async () => { uploads++; throw new Error('Self-test must stay offline'); });
-    const diagnostic = validateReport({ schema: 1, appVersion: '1.0.1', platform: process.platform, osVersion: '1.0', architecture: process.arch, spotifyVersion: null, installation: 'desktop', spotifyRunning: false, storageState: 'fixed', flagValues: ['CONTROL'], readErrors: [], lastFix: 'saved', lastError: 'none', automaticRepair: false, issue: 'lyrics-still-fullscreen' });
+    const diagnostic = validateReport({ schema: 1, appVersion: require('../package.json').version, platform: process.platform, osVersion: '1.0', architecture: process.arch, spotifyVersion: null, installation: 'desktop', spotifyRunning: false, storageState: 'fixed', flagValues: ['CONTROL'], readErrors: [], lastFix: 'saved', lastError: 'none', automaticRepair: false, issue: 'lyrics-still-fullscreen' });
     const review = await reports.prepare(diagnostic);
     await assert.rejects(reports.submit({ id: review.id, consent: false }), /permission/);
     assert.equal(uploads, 0);

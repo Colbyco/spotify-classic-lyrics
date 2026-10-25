@@ -2,7 +2,7 @@
 
 Restore lyrics in the center of Spotify, with your library and playback controls visible.
 
-**[Download for Windows](https://github.com/Colbyco/spotify-classic-lyrics/releases/latest/download/Classic-Lyrics-Setup-1.0.1.exe)** · **[Download for macOS — Intel + Apple silicon](https://github.com/Colbyco/spotify-classic-lyrics/releases/latest/download/Classic-Lyrics-1.0.1-macOS-Universal.dmg)** · [All downloads](https://github.com/Colbyco/spotify-classic-lyrics/releases/latest)
+**[Download for Windows](https://github.com/Colbyco/spotify-classic-lyrics/releases/latest/download/Classic-Lyrics-Setup-1.0.2.exe)** · **[Download for macOS — Intel + Apple silicon](https://github.com/Colbyco/spotify-classic-lyrics/releases/latest/download/Classic-Lyrics-1.0.2-macOS-Universal.dmg)** · [All downloads](https://github.com/Colbyco/spotify-classic-lyrics/releases/latest)
 
 No Git, terminal, Node.js installation, ZIP extraction, or Spotify customization framework is needed.
 
@@ -18,15 +18,14 @@ These initial builds do not have a paid publisher certificate or Apple notarizat
 
 ## Keep it fixed after updates
 
-Turn on **Reapply if Spotify resets it** in the installed app. This is optional and off by default.
+Turn on **Check and fix at startup** in the installed app. This is optional and off by default.
 
-- The app starts when you sign in and stays in your system tray or menu bar.
-- It checks the actual lyrics preference every 15 seconds, so it can detect resets caused by an update or a feature rollout.
-- If Spotify is open, it queues the repair. **Background monitoring never closes Spotify or interrupts playback.** Quit Spotify completely to let the queued repair run, then reopen it. Closing Spotify's window may only minimize it to the tray; use its Quit/Exit action.
-- If Spotify updates and immediately restarts, repair waits for the next full exit. Use **Fix lyrics layout** for an immediate repair with an explicit restart prompt.
-- Turning the toggle off removes the login item. **Quit** exits the helper; when monitoring is on it starts again at the next sign-in.
+- At sign-in, the helper checks the lyrics preference once, reapplies the fix if needed and Spotify is closed, then exits. It does not keep running or poll settings.
+- Opening the helper manually also checks once. With this option on, it can reapply the fix at that launch if Spotify is closed.
+- If Spotify is already running, automatic repair skips writing its settings. Quit Spotify completely and reopen the helper, or use **Fix lyrics layout** for a manual repair with an explicit restart prompt. Closing Spotify's window may leave it running; use its Quit/Exit action.
+- Closing the helper exits it. The startup option remains enabled for the next sign-in; turning the checkbox off removes it.
 
-This monitors Spotify's preference. It does not block Spotify updates or download updates to this helper automatically.
+“Startup” means the helper starting, including at sign-in. It does not intercept Spotify's launch. If Spotify also starts automatically, it may already be open before the helper checks. A reset that happens later is checked at the next helper launch or when you click **Check again**. The helper does not block Spotify updates or download its own updates automatically.
 
 ## What it changes
 
@@ -44,7 +43,7 @@ New stock profiles without an override record are supported: the app reads the c
 
 ## If it doesn't work
 
-Click **Report a problem** after a fix attempt. It also appears if settings cannot be found or read. The tool runs checks locally and explains common causes, such as a reset preference, locked database, unfamiliar settings format, or automatic repair waiting for Spotify to exit. It can verify the saved setting; it cannot prove what Spotify displays on your screen.
+Click **Report a problem** after a fix attempt. It also appears if settings cannot be found or read. The tool runs checks locally and explains common causes, such as a reset preference, locked database, unfamiliar settings format, or Spotify already being open during an automatic startup check. It can verify the saved setting; it cannot prove what Spotify displays on your screen.
 
 Choose what went wrong and review **View report details**. To share it, check **I agree to send this report** and click **Send report**. Reports go privately to the developer. **No GitHub account, Spotify account connection, email address, or login is needed to report a problem.** You can also save a report locally instead.
 
@@ -56,7 +55,7 @@ The automatic checks use local rules. Reports give the maintainer information to
 
 ## Privacy and backups
 
-Fixing and monitoring work offline. There is no background analytics. The app sends diagnostic data only when you review a report, give permission, and click Send. Failed sends are not queued or retried automatically. It never asks for a Spotify password or token. It uses the canonical username only to locate the correct local preference. Backups contain the previous lyrics value, local storage-key identifier, and database path; they do not contain a whole Spotify profile or login credentials.
+Fixing and startup checks work offline. There is no background analytics. The app sends diagnostic data only when you review a report, give permission, and click Send. Failed sends are not queued or retried automatically. It never asks for a Spotify password or token. It uses the canonical username only to locate the correct local preference. Backups contain the previous lyrics value, local storage-key identifier, and database path; they do not contain a whole Spotify profile or login credentials.
 
 Its settings and undo backup stay in the current user's application data directory (`Classic Lyrics`). Temporary inspection copies are deleted after each check. Uninstalling the helper leaves the chosen Spotify preference in place; use **Undo** first if you want the earlier behavior back.
 

@@ -31,7 +31,7 @@ export function analyze(r) {
   if (r.storageState === 'needs-fix') add(r.lastFix === 'saved' ? 'preference-reset' : 'preference-not-saved', r.lastFix === 'saved' ? 'The setting has reset since the last successful fix.' : 'The classic layout setting is not saved yet.');
   if (r.storageState === 'fixed') add('preference-saved', 'The setting is saved. If lyrics still cover the window after restarting Spotify, this Spotify version may no longer use it.');
   if (r.issue === 'automatic-repair-failed' && !r.automaticRepair) add('automatic-repair-off', 'Automatic repair is turned off.');
-  if (r.issue === 'automatic-repair-failed' && r.automaticRepair && r.spotifyRunning) add('waiting-for-spotify-exit', 'Automatic repair waits until Spotify fully closes. Closing its window may leave it running.');
+  if (r.issue === 'automatic-repair-failed' && r.automaticRepair && r.spotifyRunning) add('spotify-is-open', 'Automatic repair runs once when this tool starts with Spotify closed. Quit Spotify and reopen this tool, or use Fix lyrics layout.');
   if (!findings.length) add('more-investigation-needed', 'The checks did not identify the cause. A report can help investigate this version.');
   return findings;
 }

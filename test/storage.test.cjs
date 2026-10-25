@@ -45,7 +45,7 @@ test('malformed settings are rejected before any preference is written', async t
   await assert.rejects(s.change(f.candidate, f.backup), /not an object/);
   assert.equal(await fs.stat(f.backup).then(() => true, () => false), false);
 });
-test('automatic repair detects a later reset and defers until Spotify closes', async t => {
+test('a startup check repairs only with Spotify closed, and a later startup detects a reset', async t => {
   const f = await fixture(); t.after(f.cleanup); let running = true, calls = 0;
   const inspect = async () => ({ kind: (await s.inspectSnapshot(f.candidate)).fixed ? 'fixed' : 'needs-fix', running });
   const repair = async () => { calls++; await s.change(f.candidate, f.backup); return inspect(); };

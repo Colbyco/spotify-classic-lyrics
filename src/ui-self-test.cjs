@@ -13,7 +13,7 @@ async function run() {
     const body = JSON.parse(options.body); assert.equal(body.consent, true);
     return { ok: true, json: async () => ({ accepted: true, id: body.id }) };
   });
-  const example = { schema: 1, appVersion: '1.0.1', platform: process.platform, osVersion: '1.0', architecture: process.arch, spotifyVersion: null, installation: 'desktop', spotifyRunning: false, storageState: 'fixed', flagValues: ['CONTROL'], readErrors: [], lastFix: 'saved', lastError: 'none', automaticRepair: false, issue: 'lyrics-still-fullscreen' };
+  const example = { schema: 1, appVersion: require('../package.json').version, platform: process.platform, osVersion: '1.0', architecture: process.arch, spotifyVersion: null, installation: 'desktop', spotifyRunning: false, storageState: 'fixed', flagValues: ['CONTROL'], readErrors: [], lastFix: 'saved', lastError: 'none', automaticRepair: false, issue: 'lyrics-still-fullscreen' };
   const commands = [];
   ipcMain.handle('command', async (_event, name, argument) => {
     commands.push(name);

@@ -31,12 +31,12 @@ test('receiver schema rejects extra fields and personally identifying strings', 
   assert.equal(errorCategory(Object.assign(new Error('C:/private-user/settings'), { code: 'EACCES' })), 'access-denied');
 });
 
-test('analysis distinguishes a reset, waiting for Spotify, and a saved preference without claiming the visible layout is verified', async () => {
+test('analysis distinguishes a reset, Spotify being open, and a saved preference without claiming the visible layout is verified', async () => {
   const { analyze } = await import('../src/report-schema.mjs');
   assert.equal(analyze(example())[0].code, 'preference-saved');
   const reset = analyze({ ...example(), storageState: 'needs-fix', automaticRepair: true, issue: 'automatic-repair-failed' });
   assert.ok(reset.some(f => f.code === 'preference-reset'));
-  assert.ok(reset.some(f => f.code === 'waiting-for-spotify-exit'));
+  assert.ok(reset.some(f => f.code === 'spotify-is-open'));
 });
 
 test('preparing and reviewing never sends; explicit consent and a current reviewed ID are required', async () => {
