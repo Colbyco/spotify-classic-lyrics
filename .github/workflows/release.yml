@@ -41,6 +41,7 @@ jobs:
           $screenshots = Join-Path $env:RUNNER_TEMP 'classic-lyrics-screenshots'
           $exe = Join-Path $PWD 'dist/win-unpacked/Classic Lyrics.exe'
           $process = Start-Process -FilePath $exe -ArgumentList @('--self-test', "--report=$report", "--screenshots=$screenshots") -WindowStyle Hidden -PassThru -Wait
+          if (Test-Path -LiteralPath $report) { Get-Content -LiteralPath $report }
           if ($process.ExitCode -ne 0) { throw 'Packaged smoke test failed' }
           $result = Get-Content -Raw -LiteralPath $report | ConvertFrom-Json
           if (-not $result.passed) { throw 'No successful smoke-test result' }

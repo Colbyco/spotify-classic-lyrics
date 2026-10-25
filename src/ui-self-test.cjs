@@ -35,7 +35,8 @@ async function run(screenshotDirectory) {
     const capture = async name => {
       if (!screenshotDirectory) return;
       await fs.mkdir(screenshotDirectory, { recursive: true });
-      const image = await win.webContents.capturePage(undefined, { stayHidden: true, stayAwake: true });
+      const rect = await evaluate('({x: 0, y: 0, width: innerWidth, height: innerHeight})');
+      const image = await win.webContents.capturePage(rect, { stayHidden: true, stayAwake: true });
       assert.ok(!image.isEmpty(), 'App screenshot must contain pixels');
       await fs.writeFile(path.join(screenshotDirectory, `${name}.png`), image.toPNG());
     };
