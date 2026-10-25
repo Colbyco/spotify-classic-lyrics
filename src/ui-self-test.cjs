@@ -28,13 +28,21 @@ async function run(screenshotDirectory) {
       default: throw new Error(`Unexpected test action: ${name}`);
     }
   });
-  const win = new BrowserWindow({ width: 440, height: 365, show: false, focusable: false, skipTaskbar: true, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, offscreen: true, backgroundThrottling: false } });
+  const win = new BrowserWindow({ width: 440, height: 365, show: !!screenshotDirectory, focusable: false, skipTaskbar: true, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, offscreen: true, backgroundThrottling: false } });
   try {
     await win.loadFile(path.join(__dirname, 'index.html'));
+    if (screenshotDirectory) win.showInactive();
     const evaluate = source => win.webContents.executeJavaScript(source);
     const capture = async name => {
       if (!screenshotDirectory) return;
       await fs.mkdir(screenshotDirectory, { recursive: true });
+      let frameTimeout;
+      try {
+        await Promise.race([
+          evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))'),
+          new Promise((_resolve, reject) => { frameTimeout = setTimeout(() => reject(new Error('App compositor did not settle.')), 10000); })
+        ]);
+      } finally { clearTimeout(frameTimeout); }
       const png = await new Promise((resolve, reject) => {
         let frames = 0;
         const finish = (error, image) => {
@@ -76,6 +84,7 @@ async function run(screenshotDirectory) {
     assert.equal(await evaluate('document.getElementById("consent").checked'), false);
     assert.equal(uploads, 0);
     win.setSize(460, 690);
+    if (screenshotDirectory) await waitFor('innerWidth === 460 && innerHeight === 690');
     await capture('report');
     await evaluate('document.getElementById("consent").click()');
     assert.equal(await evaluate('document.getElementById("send").disabled'), false);
